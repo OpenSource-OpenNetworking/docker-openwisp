@@ -45,6 +45,14 @@ def dashboard_status():
     return uwsgi_status(t)
 
 
+def network_topology_status():
+    t = (
+        f"{os.environ['NETWORK_TOPOLOGY_APP_SERVICE']}:"
+        f"{os.environ['NETWORK_TOPOLOGY_APP_PORT']}"
+    )
+    return uwsgi_status(t)
+
+
 def redis_status():
     kwargs = {}
     redis_user = os.environ.get("REDIS_USER")
@@ -88,6 +96,13 @@ if __name__ == "__main__":
         while not connected:
             connected = dashboard_status()
         print("Connection with OpenWISP dashboard established.")
+    # OpenWISP Network Topology Connection
+    if "network_topology" in arguments:
+        print("Waiting for OpenWISP network topology to become available...")
+        connected = False
+        while not connected:
+            connected = network_topology_status()
+        print("Connection with OpenWISP network topology established.")
     # Redis Connection
     if "redis" in arguments:
         import redis

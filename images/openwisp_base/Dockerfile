@@ -1,4 +1,10 @@
-FROM python:3.13-slim-bullseye AS system
+# Multi-platform build arguments
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+FROM --platform=$BUILDPLATFORM python:3.13-slim-bullseye AS system
 
 # System requirements:
 # 1. gettext: Required by envsubst used in scripts
@@ -23,7 +29,10 @@ USER openwisp:root
 FROM system AS openwisp_python
 
 ENV PATH="${PATH}:/home/openwisp/.local/bin"
-ENV PYTHONPATH=/home/openwisp/.local/lib/python3.10/site-packages
+# Use dynamic Python version detection for multi-platform compatibility
+RUN PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')") && \
+    echo "export PYTHONPATH=/home/openwisp/.local/lib/python${PYTHON_VERSION}/site-packages" >> ~/.bashrc
+ENV PYTHONPATH=/home/openwisp/.local/lib/python3.13/site-packages
 
 RUN pip install --no-cache-dir --user --upgrade pip~=24.1.2 setuptools~=70.3.0 wheel~=0.43.0
 ARG OPENWISP_MONITORING_SOURCE="https://github.com/openwisp/openwisp-monitoring/tarball/1.2"
@@ -143,8 +152,10 @@ ENV DASHBOARD_APP_SERVICE=dashboard \
     DASHBOARD_APP_PORT=8000 \
     API_APP_PORT=8001 \
     WEBSOCKET_APP_PORT=8002 \
+    NETWORK_TOPOLOGY_APP_PORT=8003 \
     DASHBOARD_INTERNAL=dashboard.internal \
     API_INTERNAL=api.internal \
+    NETWORK_TOPOLOGY_INTERNAL=network-topology.internal \
     # SSH Credentials Configurations
     SSH_PRIVATE_KEY_PATH=/home/openwisp/.ssh/id_ed25519 \
     SSH_PUBLIC_KEY_PATH=/home/openwisp/.ssh/id_ed25519.pub \

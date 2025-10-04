@@ -1,3 +1,9 @@
+# Multi-platform build arguments
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
 FROM alpine:3.22
 
 WORKDIR /opt/openwisp/
@@ -7,9 +13,9 @@ RUN apk add --no-cache --upgrade \
             cyrus-sasl-login~=2.1.28-r8 \
             openssl && \
     apk add --no-cache \
-            postfix~=3.10.4-r0 \
-            rsyslog~=8.2410.0-r1 \
-            tzdata~=2025b-r0 && \
+            postfix \
+            rsyslog \
+            tzdata && \
     rm -rf /tmp/* /var/cache/apk/*
 
 CMD ["sh", "init_command.sh"]

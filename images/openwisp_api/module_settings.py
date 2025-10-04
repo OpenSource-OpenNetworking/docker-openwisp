@@ -71,5 +71,6 @@ EXTENDED_APPS = [
     "django_loci",
 ]
 
+OPENWISP_NETWORK_TOPOLOGY_API_URLCONF = "openwisp_network_topology.urls"
 LOGIN_REDIRECT_URL = "account_change_password"
 ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL

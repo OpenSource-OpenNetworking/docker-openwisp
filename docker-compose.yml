@@ -1,23 +1,29 @@
 x-celery-depends-on: &celery-depends-on
   depends_on:
+    openwisp-base:
+      condition: service_started
     postgres:
       condition: service_started
     redis:
       condition: service_started
     dashboard:
       condition: service_started
-    openvpn:
-      condition: service_healthy
 
 services:
+  openwisp-base:
+    image: docker-openwisp-gmail-openwisp-base
+    build:
+      context: images
+      dockerfile: openwisp_base/Dockerfile
+    platform: linux/arm64
+
   dashboard:
-    image: openwisp/openwisp-dashboard:latest
+    image: docker-openwisp-gmail-openwisp-dashboard:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_dashboard/Dockerfile
-      args:
-        DASHBOARD_APP_PORT: 8000
+    platform: linux/arm64
     env_file:
       - .env
     volumes:
@@ -28,19 +34,19 @@ services:
       - influxdb_data:/var/lib/influxdb
       - ./customization/configuration/django/:/opt/openwisp/openwisp/configuration:ro
     depends_on:
+      - openwisp-base
       - postgres
       - redis
       - postfix
       - influxdb
 
   api:
-    image: openwisp/openwisp-api:latest
+    image: docker-openwisp-gmail-openwisp-api:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_api/Dockerfile
-      args:
-        API_APP_PORT: 8001
+    platform: linux/arm64
     env_file:
       - .env
     volumes:
@@ -49,28 +55,34 @@ services:
       - openwisp_private_storage:/opt/openwisp/private
       - ./customization/configuration/django/:/opt/openwisp/openwisp/configuration:ro
     depends_on:
+      - openwisp-base
       - postgres
       - redis
       - dashboard
 
   websocket:
-    image: openwisp/openwisp-websocket:latest
+    image: docker-openwisp-gmail-openwisp-websocket:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_websocket/Dockerfile
-      args:
-        WEBSOCKET_APP_PORT: 8002
+    platform: linux/arm64
     env_file:
       - .env
     volumes:
       - ./customization/configuration/django/:/opt/openwisp/openwisp/configuration:ro
+    networks:
+      default:
+        aliases:
+          - websocket
     depends_on:
+      - openwisp-base
       - dashboard
 
   celery:
-    image: openwisp/openwisp-dashboard:latest
+    image: docker-openwisp-gmail-openwisp-dashboard:latest
     restart: always
+    platform: linux/arm64
     environment:
       - MODULE_NAME=celery
     volumes:
@@ -84,8 +96,9 @@ services:
     network_mode: "service:openvpn"
 
   celery_monitoring:
-    image: openwisp/openwisp-dashboard:latest
+    image: docker-openwisp-gmail-openwisp-dashboard:latest
     restart: always
+    platform: linux/arm64
     environment:
       - MODULE_NAME=celery_monitoring
     volumes:
@@ -97,9 +110,26 @@ services:
     <<: *celery-depends-on
     network_mode: "service:openvpn"
 
-  celerybeat:
-    image: openwisp/openwisp-dashboard:latest
+  openwisp-network-topology:
+    image: docker-openwisp-gmail-openwisp-dashboard:latest
     restart: always
+    platform: linux/arm64
+    environment:
+      - MODULE_NAME=network_topology
+    volumes:
+      - openwisp_media:/opt/openwisp/media
+      - openwisp_private_storage:/opt/openwisp/private
+      - openwisp_ssh:/home/openwisp/.ssh
+      - ./customization/configuration/django/:/opt/openwisp/openwisp/configuration:ro
+    env_file:
+      - .env
+    <<: *celery-depends-on
+    network_mode: "service:openvpn"
+
+  celerybeat:
+    image: docker-openwisp-gmail-openwisp-dashboard:latest
+    restart: always
+    platform: linux/arm64
     environment:
       - MODULE_NAME=celerybeat
     env_file:
@@ -107,16 +137,19 @@ services:
     volumes:
       - ./customization/configuration/django/:/opt/openwisp/openwisp/configuration:ro
     depends_on:
+      - openwisp-base
       - postgres
       - redis
       - dashboard
 
   nginx:
-    image: openwisp/openwisp-nginx:latest
+    image: docker-openwisp-gmail-openwisp-nginx:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_nginx/Dockerfile
+    platform: linux/arm64
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
     env_file:
       - .env
     volumes:
@@ -130,6 +163,8 @@ services:
         aliases:
          - dashboard.internal
          - api.internal
+         - network-topology.internal
+         - websocket.internal
     ports:
       - "80:80"
       - "443:443"
@@ -139,43 +174,48 @@ services:
       - websocket
 
   freeradius:
-    image: openwisp/openwisp-freeradius:latest
+    image: docker-openwisp-gmail-openwisp-freeradius:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_freeradius/Dockerfile
+    platform: linux/arm64
     env_file:
       - .env
     ports:
       - "1812:1812/udp"
       - "1813:1813/udp"
     depends_on:
+      - openwisp-base
       - postgres
       - api
       - dashboard
 
   postfix:
-    image: openwisp/openwisp-postfix:latest
+    image: docker-openwisp-gmail-openwisp-postfix:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_postfix/Dockerfile
+    platform: linux/arm64
     env_file:
       - .env
     volumes:
       - openwisp_certs:/etc/ssl/mail
 
   openvpn:
-    image: openwisp/openwisp-openvpn:latest
+    image: docker-openwisp-gmail-openwisp-openvpn:latest
     restart: always
     build:
       context: images
       dockerfile: openwisp_openvpn/Dockerfile
+    platform: linux/arm64
     ports:
       - "1194:1194/udp"
     env_file:
       - .env
     depends_on:
+      - openwisp-base
       - postgres
     cap_add:
       - NET_ADMIN
@@ -189,29 +229,38 @@ services:
       start_period: 90s
 
   postgres:
-    image: postgis/postgis:15-3.4-alpine
+    image: kartoza/postgis:15-3.4
     restart: always
+    platform: linux/arm64
+    env_file:
+      - .env
     environment:
-      - POSTGRES_DB=$DB_NAME
-      - POSTGRES_USER=$DB_USER
-      - POSTGRES_PASSWORD=$DB_PASS
-      - TZ=$TZ
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASS=${DB_PASS}
+      - POSTGRES_DBNAME=${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   influxdb:
-    image: influxdb:1.8-alpine
+    image: influxdb:1.8
     restart: always
+    platform: linux/arm64
     environment:
       - INFLUXDB_DB=$INFLUXDB_NAME
       - INFLUXDB_USER=$INFLUXDB_USER
       - INFLUXDB_USER_PASSWORD=$INFLUXDB_PASS
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=$INFLUXDB_PASS
+      - INFLUXDB_HTTP_AUTH_ENABLED=true
     volumes:
       - influxdb_data:/var/lib/influxdb
+    ports:
+      - "8086:8086"
 
   redis:
     image: redis:alpine
     restart: always
+    platform: linux/arm64
     volumes:
       - redis_data:/data
 
@@ -227,6 +276,7 @@ volumes:
 
 networks:
   default:
+    name: openwisp-network
     ipam:
       config:
-        - subnet: 172.18.0.0/16
+        - subnet: 172.22.0.0/24

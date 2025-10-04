@@ -1,5 +1,5 @@
 # hadolint ignore=DL3007
-FROM openwisp/openwisp-base:latest
+FROM docker-openwisp-gmail-openwisp-base
 WORKDIR /opt/openwisp/
 
 # Location: /opt/openwisp/
@@ -24,6 +24,8 @@ ENV MODULE_NAME=dashboard \
     OPENWISP_CELERY_MONITORING_CHECKS_COMMAND_FLAGS=--concurrency=1 \
     USE_OPENWISP_CELERY_FIRMWARE=True \
     OPENWISP_CELERY_FIRMWARE_COMMAND_FLAGS=--concurrency=1 \
+    USE_OPENWISP_CELERY_TOPOLOGY=True \
+    OPENWISP_CELERY_TOPOLOGY_COMMAND_FLAGS=--concurrency=1 \
     CONTAINER_PORT=$DASHBOARD_APP_PORT
 
 EXPOSE $DASHBOARD_APP_PORT

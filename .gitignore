@@ -1,3 +1,77 @@
+# ====================================
+# OpenWISP Docker Production .gitignore
+# ====================================
+
+# =====================================
+# Environment & Configuration Files
+# =====================================
+.env
+.env.local
+.env.development
+.env.production
+.env.secrets
+.env.backup
+.env.*
+!.env.production.template
+!.env.example
+
+# =====================================
+# Docker & Deployment
+# =====================================
+docker-compose.override.yml
+.docker/
+docker-compose.dev.yml
+
+# Docker volumes and data
+data/
+volumes/
+postgres_data/
+redis_data/
+influxdb_data/
+static_files/
+media_files/
+nginx_logs/
+
+# =====================================
+# Logs & Runtime Files
+# =====================================
+*.log
+logs/
+/var/log/
+*.pid
+*.pid.lock
+*.swp
+*.swo
+*~
+
+# =====================================
+# Backup Files
+# =====================================
+backup/
+*.backup
+*.sql
+*.dump
+*.tar.gz
+*.zip
+backup_*
+restore_*
+
+# =====================================
+# SSL Certificates & Keys
+# =====================================
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+certs/
+ssl/
+letsencrypt/
+
+# =====================================
+# Python
+# =====================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -5,6 +79,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+build/
 develop-eggs/
 dist/
 downloads/
@@ -22,8 +97,6 @@ wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -48,37 +121,149 @@ coverage.xml
 # Django
 local_settings.py
 db.sqlite3
+media/
+staticfiles/
+static/
 
-# Sphinx documentation
-docs/_build/
+# =====================================
+# Development Tools
+# =====================================
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# celery beat schedule file
-celerybeat-schedule
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Environments
+# =====================================
+# Node.js (if using any frontend tools)
+# =====================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# =====================================
+# Temporary & Cache Files
+# =====================================
+tmp/
+temp/
+.tmp/
+.cache/
+*.tmp
+*.temp
+
+# =====================================
+# Virtual Environments
+# =====================================
 .python-version
-.venv
+.venv/
 env/
 venv/
 ENV/
 env.bak/
-target/
 venv.bak/
-.build.env
-.dev.env
 .mypy_cache/
 
-# misc
+# =====================================
+# Infrastructure & DevOps
+# =====================================
 .vagrant/
 .terraform/
 *.tfstate
 *.tfstate.backup
-media/
-/.idea/
-local/
-*.log#
+.terraform.lock.hcl
 
-# openwisp
-customization/*
+# Ansible
+*.retry
+
+# =====================================
+# Monitoring & Health Checks
+# =====================================
+/var/lib/docker/
+health_check.txt
+monitoring_report.txt
+system_info.txt
+
+# =====================================
+# Custom OpenWISP Files
+# =====================================
+# Customization (keep templates but ignore actual configs)
+customization/configuration/django/custom_django_settings.py
+customization/theme/custom/
+customization/secrets/
+
+# Keep template files
 !customization/configuration/django/__init__.py
 !customization/configuration/django/custom_django_settings.example.py
+!customization/theme/
+
+# Private keys and secrets
+ssh_keys/
+*.pem
+*.key
+
+# =====================================
+# Documentation (Optional - uncomment if needed)
+# =====================================
+# Remove the following lines if you want to track documentation
+# *.md
+# !README.md
+# !CONTRIBUTING.md
+# !LICENSE.md
+# docs/_build/
+
+# =====================================
+# Scripts (Keep essential ones)
+# =====================================
+# Comment out the scripts you want to keep
+# scripts/local/
+# scripts/dev/
+# *.sh
+# !deploy_production.sh
+# !backup.sh
+# !monitor.sh
+# !setup-arm64.sh
+
+# =====================================
+# Test Files
+# =====================================
+.coverage
+htmlcov/
+.pytest_cache/
+test_reports/
+
+# =====================================
+# Security & Sensitive Data
+# =====================================
+secrets/
+credentials/
+tokens/
+api_keys.txt
+passwords.txt
+
+# =====================================
+# Generated Files
+# =====================================
+VERSION
+BUILD_INFO
+COMMIT_HASH
+
+# myself
+*.md
+*.sh
+.env.production
+docker-compose.production.yml
+.env.production.template
+.env

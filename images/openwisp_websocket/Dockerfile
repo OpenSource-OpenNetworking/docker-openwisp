@@ -1,5 +1,11 @@
+# Multi-platform build arguments
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
 # hadolint ignore=DL3007
-FROM openwisp/openwisp-base:latest
+FROM --platform=$BUILDPLATFORM docker-openwisp-gmail-openwisp-base
 
 WORKDIR /opt/openwisp/
 

@@ -13,3 +13,4 @@ tldextract~=5.3.0
 # (eg: Amazon S3, GCS)
 django-storages~=1.14.6
 boto3~=1.40.4
+openwisp-utils~=1.1.0

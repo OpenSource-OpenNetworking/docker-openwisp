@@ -89,6 +89,14 @@ elif [ "$MODULE_NAME" = 'celery' ]; then
 			--pidfile /opt/openwisp/celery_firmware_upgrader.pid --detach \
 			${OPENWISP_CELERY_FIRMWARE_COMMAND_FLAGS}
 	fi
+
+	if [[ "$USE_OPENWISP_TOPOLOGY" == "True" && "$USE_OPENWISP_CELERY_TOPOLOGY" == "True" ]]; then
+		echo "Starting the 'topology' celery worker"
+		celery -A openwisp worker -l ${DJANGO_LOG_LEVEL} --queues topology \
+			-n topology@%h --logfile /opt/openwisp/logs/celery_topology.log \
+			--pidfile /opt/openwisp/celery_topology.pid --detach \
+			${OPENWISP_CELERY_TOPOLOGY_COMMAND_FLAGS}
+	fi
 	sleep 1s
 	tail -f /opt/openwisp/logs/*
 elif [ "$MODULE_NAME" = 'celery_monitoring' ]; then

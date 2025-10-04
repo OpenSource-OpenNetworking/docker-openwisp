@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-
-# format shell scripts
-shfmt -w -l .
-
-# format python files
-openwisp-qa-format

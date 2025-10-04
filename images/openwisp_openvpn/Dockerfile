@@ -1,11 +1,25 @@
-# hadolint ignore=DL3007
-FROM kylemanna/openvpn:2.4
+# Multi-platform build arguments
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
-RUN apk add --no-cache \
-            curl~=7.79.1-r1 \
-            tzdata~=2022a-r0 \
-            supervisor~=4.2.0-r0 && \
-    rm -rf /var/cache/apk/* /tmp/*
+# Use Alpine base for multi-platform support
+FROM alpine:3.19
+
+# Install OpenVPN and dependencies for multi-platform support
+RUN apk add --no-cache --update \
+    openvpn \
+    openssl \
+    iptables \
+    bash \
+    curl \
+    tzdata \
+    supervisor \
+    && rm -rf /var/cache/apk/* /tmp/*
+
+# Create necessary directories
+RUN mkdir -p /etc/openvpn /opt/Dockers-OpenVPN
 CMD ["sh", "init_command.sh"]
 EXPOSE 1194
 

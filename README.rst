@@ -29,3 +29,19 @@ Documentation
 - `Usage documentation <https://openwisp.io/docs/stable/docker/>`_
 - `Developer documentation
   <https://openwisp.io/docs/stable/docker/developer/instructions.html>`_
+
+ARM64 Support
+-------------
+
+This repository includes full support for ARM64 architectures (Apple Silicon, Raspberry Pi, AWS Graviton, etc.):
+
+- `ARM64 Usage Guide <ARM64-USAGE-GUIDE.md>`_ - Complete deployment instructions for ARM64 systems
+- `ARM64 Troubleshooting Guide <ARM64-TROUBLESHOOTING.md>`_ - Comprehensive troubleshooting for ARM64-specific issues
+
+**Key ARM64 Features:**
+
+- ✅ Native ARM64 Docker images for all services
+- ✅ Optimized performance configurations
+- ✅ ARM64-specific troubleshooting solutions
+- ✅ Production-ready deployment guides
+- ✅ Memory and CPU optimizations for ARM64 architectures

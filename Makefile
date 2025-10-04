@@ -12,6 +12,8 @@ TAG = edge
 SKIP_PULL ?= false
 SKIP_BUILD ?= false
 SKIP_TESTS ?= false
+PLATFORMS ?= linux/amd64,linux/arm64
+BUILDER ?= multiarch-builder
 
 # Pull
 pull:
@@ -23,10 +25,62 @@ pull:
 		docker tag  $(USER)/$${image}:$(TAG) openwisp/$${image}:latest; \
 	done
 
+# Setup buildx for multi-platform builds
+setup-buildx:
+	docker buildx create --name $(BUILDER) --driver docker-container --use --bootstrap || true
+	docker buildx inspect $(BUILDER)
+
 # Build
 python-build: build.py
 	python build.py change-secret-key
 
+# Multi-platform base build (for registry push)
+base-build-multiplatform:
+	BUILD_ARGS_FILE=$$(cat .build.env 2>/dev/null); \
+	for build_arg in $$BUILD_ARGS_FILE; do \
+	    BUILD_ARGS+=" --build-arg $$build_arg"; \
+	done; \
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag $(USER)/openwisp-base:intermedia-system \
+	             --file ./images/openwisp_base/Dockerfile \
+	             --target system \
+	             --push ./images/; \
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag $(USER)/openwisp-base:intermedia-python \
+	             --file ./images/openwisp_base/Dockerfile \
+	             --target openwisp_python \
+	             --push ./images/ \
+	             $$BUILD_ARGS; \
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag $(USER)/openwisp-base:latest \
+	             --file ./images/openwisp_base/Dockerfile \
+	             --push ./images/ \
+	             $$BUILD_ARGS
+
+# Multi-platform base build (local cache only - no loading)
+base-build-multiplatform-local:
+	BUILD_ARGS_FILE=$$(cat .build.env 2>/dev/null); \
+	for build_arg in $$BUILD_ARGS_FILE; do \
+	    BUILD_ARGS+=" --build-arg $$build_arg"; \
+	done; \
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag openwisp/openwisp-base:intermedia-system \
+	             --file ./images/openwisp_base/Dockerfile \
+	             --target system \
+	             ./images/; \
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag openwisp/openwisp-base:intermedia-python \
+	             --file ./images/openwisp_base/Dockerfile \
+	             --target openwisp_python \
+	             ./images/ \
+	             $$BUILD_ARGS; \
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag openwisp/openwisp-base:latest \
+	             --file ./images/openwisp_base/Dockerfile \
+	             ./images/ \
+	             $$BUILD_ARGS
+
+# Single platform build (for local development)
 base-build:
 	BUILD_ARGS_FILE=$$(cat .build.env 2>/dev/null); \
 	for build_arg in $$BUILD_ARGS_FILE; do \
@@ -34,15 +88,30 @@ base-build:
 	done; \
 	docker build --tag openwisp/openwisp-base:intermedia-system \
 	             --file ./images/openwisp_base/Dockerfile \
-	             --target SYSTEM ./images/; \
+	             --target system ./images/; \
 	docker build --tag openwisp/openwisp-base:intermedia-python \
 	             --file ./images/openwisp_base/Dockerfile \
-	             --target PYTHON ./images/ \
+	             --target openwisp_python ./images/ \
 	             $$BUILD_ARGS; \
 	docker build --tag openwisp/openwisp-base:latest \
 	             --file ./images/openwisp_base/Dockerfile ./images/ \
 	             $$BUILD_ARGS
 
+# Multi-platform NFS build (for registry push)
+nfs-build-multiplatform:
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag $(USER)/openwisp-nfs:latest \
+	             --file ./images/openwisp_nfs/Dockerfile \
+	             --push ./images/
+
+# Multi-platform NFS build (local cache only)
+nfs-build-multiplatform-local:
+	docker buildx build --platform $(PLATFORMS) \
+	             --tag openwisp/openwisp-nfs:latest \
+	             --file ./images/openwisp_nfs/Dockerfile \
+	             ./images/
+
+# Single platform NFS build
 nfs-build:
 	docker build --tag openwisp/openwisp-nfs:latest \
 	             --file ./images/openwisp_nfs/Dockerfile ./images/
@@ -61,7 +130,23 @@ develop-runtests:
 develop-pythontests:
 	python3 tests/runtests.py
 
-# Development
+# Development (multi-platform - for CI/CD and registry)
+develop-multiplatform: base-build-multiplatform nfs-build-multiplatform
+	@echo "Multi-platform images built and pushed to registry"
+	@echo "Use 'make develop' for local development"
+
+# Development (multi-platform - local build only)  
+develop-multiplatform-local: base-build-multiplatform-local nfs-build-multiplatform-local
+	@echo "Multi-platform images built locally (cached only)"
+	@echo "For local development, use 'make develop' with current architecture"
+
+# Multi-platform aware development (builds for current platform with multi-arch support)
+develop-multi-aware: setup-buildx base-build
+	docker compose build --parallel
+	docker compose up -d
+	docker compose logs -f
+
+# Development (single platform - current architecture)
 develop: compose-build
 	docker compose up -d
 	docker compose logs -f
