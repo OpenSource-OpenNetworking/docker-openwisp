@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# OpenWISP 生产环境备份脚本
+# OpenWISP Production Environment Backup Script
 # Production Backup Script for OpenWISP
 
 set -e
 
-# 配置
+# Configuration
 BACKUP_DIR="/backup/openwisp"
 DATE=$(date +%Y%m%d_%H%M%S)
 RETENTION_DAYS=30
 
-# 颜色定义
+# Color definitions
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
@@ -29,15 +29,15 @@ error() {
     exit 1
 }
 
-# 创建备份目录
+# Create backup directory
 create_backup_dir() {
     mkdir -p $BACKUP_DIR/{database,config,media,logs}
     chmod 700 $BACKUP_DIR
 }
 
-# 备份PostgreSQL数据库
+# Backup PostgreSQL database
 backup_database() {
-    log "备份PostgreSQL数据库..."
+    log "Backing up PostgreSQL database..."
     
     DB_NAME=$(grep DB_NAME .env | cut -d= -f2)
     DB_USER=$(grep DB_USER .env | cut -d= -f2)
@@ -48,12 +48,12 @@ backup_database() {
         docker-compose exec -T postgres pg_dump -U $DB_USER $DB_NAME | gzip > $BACKUP_DIR/database/postgres_${DATE}.sql.gz
     fi
     
-    log "数据库备份完成: postgres_${DATE}.sql.gz"
+    log "Database backup completed: postgres_${DATE}.sql.gz"
 }
 
-# 备份InfluxDB
+# Backup InfluxDB
 backup_influxdb() {
-    log "备份InfluxDB..."
+    log "Backing up InfluxDB..."
     
     INFLUX_DB=$(grep INFLUXDB_NAME .env | cut -d= -f2)
     
@@ -67,12 +67,12 @@ backup_influxdb() {
         docker-compose cp influxdb:/tmp/influxdb_${DATE}.tar.gz $BACKUP_DIR/database/
     fi
     
-    log "InfluxDB备份完成: influxdb_${DATE}.tar.gz"
+    log "InfluxDB backup completed: influxdb_${DATE}.tar.gz"
 }
 
-# 备份配置文件
+# Backup configuration files
 backup_config() {
-    log "备份配置文件..."
+    log "Backing up configuration files..."
     
     tar -czf $BACKUP_DIR/config/config_${DATE}.tar.gz \
         .env \
@@ -81,45 +81,45 @@ backup_config() {
         docker-compose.production.yml \
         images/
     
-    log "配置备份完成: config_${DATE}.tar.gz"
+    log "Configuration backup completed: config_${DATE}.tar.gz"
 }
 
-# 备份媒体文件
+# Backup media files
 backup_media() {
-    log "备份媒体文件..."
+    log "Backing up media files..."
     
     if [ -d ./data/media ]; then
         tar -czf $BACKUP_DIR/media/media_${DATE}.tar.gz ./data/media/
-        log "媒体文件备份完成: media_${DATE}.tar.gz"
+        log "Media files backup completed: media_${DATE}.tar.gz"
     else
-        warn "媒体文件目录不存在，跳过备份"
+        warn "Media files directory does not exist, skipping backup"
     fi
 }
 
-# 备份日志文件
+# Backup log files
 backup_logs() {
-    log "备份日志文件..."
+    log "Backing up log files..."
     
     if [ -d ./data/logs ]; then
         tar -czf $BACKUP_DIR/logs/logs_${DATE}.tar.gz ./data/logs/
-        log "日志文件备份完成: logs_${DATE}.tar.gz"
+        log "Log files backup completed: logs_${DATE}.tar.gz"
     else
-        warn "日志文件目录不存在，跳过备份"
+        warn "Log files directory does not exist, skipping backup"
     fi
 }
 
-# 清理旧备份
+# Clean up old backups
 cleanup_old_backups() {
-    log "清理${RETENTION_DAYS}天前的备份..."
+    log "Cleaning up backups older than ${RETENTION_DAYS} days..."
     
     find $BACKUP_DIR -type f -mtime +$RETENTION_DAYS -delete
     
-    log "清理完成"
+    log "Cleanup completed"
 }
 
-# 验证备份
+# Verify backup
 verify_backup() {
-    log "验证备份文件..."
+    log "Verifying backup files..."
     
     for file in $BACKUP_DIR/database/postgres_${DATE}.sql.gz \
                $BACKUP_DIR/config/config_${DATE}.tar.gz; do
@@ -127,29 +127,29 @@ verify_backup() {
             size=$(du -h "$file" | cut -f1)
             log "✓ $file ($size)"
         else
-            error "✗ $file 不存在"
+            error "✗ $file does not exist"
         fi
     done
     
-    log "备份验证完成"
+    log "Backup verification completed"
 }
 
-# 发送备份报告
+# Send backup report
 send_report() {
     local backup_size=$(du -sh $BACKUP_DIR | cut -f1)
     
-    log "备份报告:"
-    log "备份时间: $(date)"
-    log "备份大小: $backup_size"
-    log "备份位置: $BACKUP_DIR"
+    log "Backup report:"
+    log "Backup time: $(date)"
+    log "Backup size: $backup_size"
+    log "Backup location: $BACKUP_DIR"
     
-    # 如果配置了邮件，可以发送邮件报告
+    # If email is configured, you can send email report
     # mail -s "OpenWISP Backup Report - $DATE" admin@yourdomain.com < /tmp/backup_report.txt
 }
 
-# 主函数
+# Main function
 main() {
-    log "开始OpenWISP备份任务..."
+    log "Starting OpenWISP backup task..."
     
     create_backup_dir
     backup_database
@@ -161,10 +161,10 @@ main() {
     cleanup_old_backups
     send_report
     
-    log "备份任务完成！"
+    log "Backup task completed!"
 }
 
-# 如果直接运行脚本
+# If running script directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi

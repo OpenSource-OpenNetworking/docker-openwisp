@@ -11,7 +11,7 @@ x-celery-depends-on: &celery-depends-on
 
 services:
   openwisp-base:
-    image: docker-openwisp-gmail-openwisp-base
+    image: docker-openwisp-gmail-openwisp-base:latest
     build:
       context: images
       dockerfile: openwisp_base/Dockerfile

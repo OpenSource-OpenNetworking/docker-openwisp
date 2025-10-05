@@ -1,278 +1,278 @@
-# OpenWISP 生产环境维护指南
+# OpenWISP Production Environment Maintenance Guide
 # Production Maintenance Guide for OpenWISP
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 生产环境部署
+### 1. Production Environment Deployment
 ```bash
-# 使用自动化部署脚本
+# Use automated deployment script
 ./deploy_production.sh
 
-# 或手动部署
+# Or manual deployment
 cp .env.production.template .env
-# 编辑 .env 配置文件
+# Edit .env configuration file
 docker-compose -f docker-compose.production.yml up -d
 ```
 
-### 2. 服务管理
+### 2. Service Management
 ```bash
-# 查看服务状态
+# View service status
 docker-compose -f docker-compose.production.yml ps
 
-# 查看日志
+# View logs
 docker-compose -f docker-compose.production.yml logs -f [service_name]
 
-# 重启服务
+# Restart service
 docker-compose -f docker-compose.production.yml restart [service_name]
 
-# 停止所有服务
+# Stop all services
 docker-compose -f docker-compose.production.yml down
 
-# 强制重新创建服务
+# Force recreate services
 docker-compose -f docker-compose.production.yml up -d --force-recreate
 ```
 
-## 🔒 安全管理
+## 🔒 Security Management
 
-### 1. 密钥管理
+### 1. Key Management
 ```bash
-# 生成新的Django密钥
+# Generate new Django secret key
 openssl rand -base64 32
 
-# 生成数据库密码
+# Generate database password
 openssl rand -base64 16
 
-# 更新密钥后重启服务
+# Restart services after updating keys
 docker-compose -f docker-compose.production.yml restart
 ```
 
-### 2. SSL证书管理
+### 2. SSL Certificate Management
 ```bash
-# 使用Let's Encrypt证书
-# 1. 修改 .env 文件
+# Use Let's Encrypt certificate
+# 1. Modify .env file
 SSL_CERT_MODE=LetsEncrypt
 CERT_ADMIN_EMAIL=admin@yourdomain.com
 
-# 2. 重新构建nginx
+# 2. Rebuild nginx
 docker-compose -f docker-compose.production.yml build nginx
 docker-compose -f docker-compose.production.yml up -d nginx
 
-# 手动更新SSL证书
+# Manually update SSL certificate
 docker-compose -f docker-compose.production.yml exec nginx certbot renew
 ```
 
-### 3. 防火墙配置
+### 3. Firewall Configuration
 ```bash
-# 只开放必要端口
+# Only open necessary ports
 ufw allow 22/tcp    # SSH
 ufw allow 80/tcp    # HTTP
 ufw allow 443/tcp   # HTTPS
 ufw enable
 
-# 限制SSH访问
-# 编辑 /etc/ssh/sshd_config
+# Restrict SSH access
+# Edit /etc/ssh/sshd_config
 # PermitRootLogin no
 # PasswordAuthentication no
 # AllowUsers your_username
 ```
 
-## 📊 监控与维护
+## 📊 Monitoring and Maintenance
 
-### 1. 系统监控
+### 1. System Monitoring
 ```bash
-# 运行监控检查
+# Run monitoring checks
 ./monitor.sh
 
-# 查看资源使用
+# View resource usage
 docker stats
 
-# 查看磁盘使用
+# View disk usage
 df -h
 
-# 查看内存使用
+# View memory usage
 free -h
 ```
 
-### 2. 日志管理
+### 2. Log Management
 ```bash
-# 查看nginx访问日志
+# View nginx access logs
 docker-compose -f docker-compose.production.yml logs nginx | grep "GET\|POST"
 
-# 查看应用错误日志
+# View application error logs
 docker-compose -f docker-compose.production.yml logs dashboard | grep -i error
 
-# 清理旧日志
+# Clean old logs
 docker system prune -f
 ```
 
-### 3. 性能优化
+### 3. Performance Optimization
 ```bash
-# 调整uWSGI进程数（根据CPU核心数）
-# 编辑 .env 文件
+# Adjust uWSGI process count (based on CPU cores)
+# Edit .env file
 UWSGI_PROCESSES=4
 UWSGI_THREADS=4
 
-# 调整Celery并发数
+# Adjust Celery concurrency
 OPENWISP_CELERY_COMMAND_FLAGS=--concurrency=2
 
-# 重启相关服务
+# Restart related services
 docker-compose -f docker-compose.production.yml restart dashboard api celery
 ```
 
-## 💾 备份与恢复
+## 💾 Backup and Recovery
 
-### 1. 自动备份
+### 1. Automated Backup
 ```bash
-# 运行备份脚本
+# Run backup script
 ./backup.sh
 
-# 设置定时备份（添加到crontab）
+# Setup scheduled backup (add to crontab)
 crontab -e
-# 添加以下行：每天凌晨2点备份
+# Add the following line: backup at 2 AM daily
 0 2 * * * /path/to/docker-openwisp-gmail/backup.sh
 ```
 
-### 2. 恢复数据
+### 2. Data Recovery
 ```bash
-# 停止服务
+# Stop services
 docker-compose -f docker-compose.production.yml down
 
-# 恢复PostgreSQL数据库
+# Restore PostgreSQL database
 gunzip -c /backup/openwisp/database/postgres_YYYYMMDD_HHMMSS.sql.gz | \
 docker-compose -f docker-compose.production.yml exec -T postgres psql -U admin openwisp
 
-# 恢复媒体文件
+# Restore media files
 tar -xzf /backup/openwisp/media/media_YYYYMMDD_HHMMSS.tar.gz -C ./
 
-# 重启服务
+# Restart services
 docker-compose -f docker-compose.production.yml up -d
 ```
 
-## 🔧 故障排除
+## 🔧 Troubleshooting
 
-### 1. 常见问题
+### 1. Common Issues
 
-#### 服务无法启动
+#### Service Cannot Start
 ```bash
-# 检查配置文件
+# Check configuration files
 docker-compose -f docker-compose.production.yml config
 
-# 查看详细错误
+# View detailed errors
 docker-compose -f docker-compose.production.yml logs [service_name]
 
-# 检查端口占用
+# Check port usage
 netstat -tlnp | grep ':80\|:443'
 ```
 
-#### 数据库连接失败
+#### Database Connection Failed
 ```bash
-# 检查数据库服务
+# Check database service
 docker-compose -f docker-compose.production.yml exec postgres pg_isready
 
-# 检查数据库连接
+# Check database connection
 docker-compose -f docker-compose.production.yml exec dashboard python manage.py dbshell
 
-# 重启数据库
+# Restart database
 docker-compose -f docker-compose.production.yml restart postgres
 ```
 
-#### nginx 502错误
+#### nginx 502 Error
 ```bash
-# 检查upstream服务
+# Check upstream services
 docker-compose -f docker-compose.production.yml exec nginx curl http://dashboard:8000
 docker-compose -f docker-compose.production.yml exec nginx curl http://api:8001
 
-# 检查nginx配置
+# Check nginx configuration
 docker-compose -f docker-compose.production.yml exec nginx nginx -t
 
-# 重启nginx
+# Restart nginx
 docker-compose -f docker-compose.production.yml restart nginx
 ```
 
-### 2. 诊断命令
+### 2. Diagnostic Commands
 ```bash
-# 检查所有服务健康状态
+# Check all service health status
 docker-compose -f docker-compose.production.yml ps
 
-# 检查容器资源使用
+# Check container resource usage
 docker stats --no-stream
 
-# 检查网络连接
+# Check network connections
 docker network ls
 docker network inspect [network_name]
 
-# 检查存储卷
+# Check storage volumes
 docker volume ls
 docker volume inspect [volume_name]
 ```
 
-## 📈 升级指南
+## 📈 Upgrade Guide
 
-### 1. 应用升级
+### 1. Application Upgrade
 ```bash
-# 备份数据
+# Backup data
 ./backup.sh
 
-# 拉取最新镜像
+# Pull latest images
 docker-compose -f docker-compose.production.yml pull
 
-# 停止服务
+# Stop services
 docker-compose -f docker-compose.production.yml down
 
-# 运行数据库迁移
+# Run database migrations
 docker-compose -f docker-compose.production.yml run --rm dashboard python manage.py migrate
 
-# 重启服务
+# Restart services
 docker-compose -f docker-compose.production.yml up -d
 
-# 验证升级
+# Verify upgrade
 ./monitor.sh
 ```
 
-### 2. 系统升级
+### 2. System Upgrade
 ```bash
-# 更新系统包
+# Update system packages
 apt update && apt upgrade -y
 
-# 更新Docker
+# Update Docker
 curl -fsSL https://get.docker.com | sh
 
-# 重启系统（如需要）
+# Restart system (if needed)
 reboot
 ```
 
-## 🚨 应急预案
+## 🚨 Emergency Response Plan
 
-### 1. 服务恢复
+### 1. Service Recovery
 ```bash
-# 快速重启所有服务
+# Quick restart all services
 docker-compose -f docker-compose.production.yml restart
 
-# 如果重启失败，强制重建
+# If restart fails, force rebuild
 docker-compose -f docker-compose.production.yml down
 docker-compose -f docker-compose.production.yml up -d --force-recreate
 ```
 
-### 2. 数据恢复
+### 2. Data Recovery
 ```bash
-# 从最新备份恢复
+# Restore from latest backup
 BACKUP_DATE=$(ls -t /backup/openwisp/database/ | head -1 | sed 's/postgres_//g' | sed 's/.sql.gz//g')
 ./restore_backup.sh $BACKUP_DATE
 ```
 
-### 3. 联系支持
+### 3. Contact Support
 ```bash
-# 收集系统信息
+# Collect system information
 docker-compose -f docker-compose.production.yml ps > system_info.txt
 docker-compose -f docker-compose.production.yml logs --tail=100 >> system_info.txt
 ./monitor.sh >> system_info.txt
 
-# 发送给技术支持
+# Send to technical support
 ```
 
-## 📞 维护联系信息
+## 📞 Maintenance Contact Information
 
-- 技术支持: support@yourdomain.com
-- 紧急联系: +86-xxx-xxxx-xxxx
-- 文档地址: https://docs.openwisp.io/
-- 项目地址: https://github.com/openwisp/docker-openwisp
+- Technical Support: support@yourdomain.com
+- Emergency Contact: +86-xxx-xxxx-xxxx
+- Documentation: https://docs.openwisp.io/
+- Project Repository: https://github.com/openwisp/docker-openwisp

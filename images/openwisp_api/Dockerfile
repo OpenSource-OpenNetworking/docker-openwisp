@@ -1,5 +1,5 @@
 # hadolint ignore=DL3007
-FROM docker-openwisp-gmail-openwisp-base
+FROM docker-openwisp-gmail-openwisp-base:latest
 
 WORKDIR /opt/openwisp/
 

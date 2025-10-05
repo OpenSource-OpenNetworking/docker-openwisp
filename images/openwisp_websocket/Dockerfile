@@ -5,7 +5,7 @@ ARG TARGETOS
 ARG TARGETARCH
 
 # hadolint ignore=DL3007
-FROM --platform=$BUILDPLATFORM docker-openwisp-gmail-openwisp-base
+FROM docker-openwisp-gmail-openwisp-base:latest
 
 WORKDIR /opt/openwisp/
 

@@ -1,10 +1,10 @@
-# 生产环境 Docker Compose 配置
+# Production Docker Compose Configuration
 # Production Docker Compose Configuration
 
 version: '3.8'
 
 services:
-  # 数据库服务
+  # Database service
   postgres:
     image: postgis/postgis:13-3.1-alpine
     environment:
@@ -25,7 +25,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Redis缓存
+  # Redis cache
   redis:
     image: redis:7-alpine
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-openwisp}
@@ -43,7 +43,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # InfluxDB时序数据库
+  # InfluxDB time series database
   influxdb:
     image: influxdb:1.8-alpine
     environment:
@@ -66,7 +66,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Dashboard服务
+  # Dashboard service
   dashboard:
     build:
       context: ./images
@@ -95,7 +95,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # API服务
+  # API service
   api:
     build:
       context: ./images
@@ -124,7 +124,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # WebSocket服务
+  # WebSocket service
   websocket:
     build:
       context: ./images
@@ -141,7 +141,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Nginx反向代理
+  # Nginx reverse proxy
   nginx:
     build:
       context: ./images
@@ -149,7 +149,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"  # 健康检查端点
+      - "8080:8080"  # Health check endpoint
     volumes:
       - static_files:/opt/openwisp/static:ro
       - media_files:/opt/openwisp/media:ro
@@ -170,7 +170,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Celery工作进程
+  # Celery worker process
   celery:
     build:
       context: ./images
@@ -190,7 +190,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Celery调度器
+  # Celery scheduler
   celerybeat:
     build:
       context: ./images
@@ -210,7 +210,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # 邮件服务
+  # Mail service
   postfix:
     build:
       context: ./images
