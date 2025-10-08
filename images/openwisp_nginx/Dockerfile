@@ -1,21 +1,15 @@
-# Multi-platform build arguments
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-ARG TARGETOS
-ARG TARGETARCH
-
-FROM nginx:1.29.0-alpine
+FROM nginx:1.29.1-alpine
 
 # hadolint ignore=DL3018
 RUN apk add --update --no-cache \
             py3-pip~=25.1.1-r0 \
             certbot~=4.0.0-r0 \
             certbot-nginx~=4.0.0-r1 \
-            openssl \
-            netcat-openbsd && \
+            openssl && \
     rm -rf /var/cache/apk/* /tmp/*
 
 WORKDIR /etc/nginx/
+CMD ["sh", "init_command.sh"]
 EXPOSE 80 443
 
 # DL3018
@@ -26,10 +20,6 @@ COPY ./common/services.py \
     /etc/nginx/
 
 RUN pip install --break-system-packages --no-cache-dir -r requirements.txt
-
-COPY ./openwisp_nginx/nginx.template.conf /etc/nginx/
-COPY --chown=openwisp:openwisp ./openwisp_nginx/direct_entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
 
 ENV MODULE_NAME=nginx \
     PYTHONUNBUFFERED=1 \
@@ -58,20 +48,13 @@ ENV MODULE_NAME=nginx \
     DASHBOARD_APP_PORT=8000 \
     API_APP_PORT=8001 \
     WEBSOCKET_APP_PORT=8002 \
-    NETWORK_TOPOLOGY_APP_PORT=8003 \
     # Application Service Name
     DASHBOARD_APP_SERVICE=dashboard \
     API_APP_SERVICE=api \
     WEBSOCKET_APP_SERVICE=websocket \
-    NETWORK_TOPOLOGY_APP_SERVICE=openwisp-network-topology \
     # Listen domains
     DASHBOARD_DOMAIN=dashboard.example.com \
     API_DOMAIN=api.example.com \
     # Inter container communication domains
     DASHBOARD_INTERNAL=dashboard.internal \
-    API_INTERNAL=api.internal \
-    NETWORK_TOPOLOGY_INTERNAL=network-topology.internal
-
-# Run nginx
-WORKDIR /etc/nginx/
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+    API_INTERNAL=api.internal
