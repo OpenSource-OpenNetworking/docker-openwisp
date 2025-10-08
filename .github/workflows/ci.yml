@@ -12,12 +12,20 @@ on:
 jobs:
   build:
     name: CI Build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Git Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Setup testing environment
         id: deps
@@ -27,27 +35,24 @@ jobs:
           echo "127.0.0.1 dashboard.openwisp.org api.openwisp.org" | sudo tee -a /etc/hosts
           # disable metric collection during builds
           sed -i 's/METRIC_COLLECTION=True/METRIC_COLLECTION=False/' .env
-          # ERROR: Cannot uninstall urllib3 2.0.7, RECORD file not found. Hint: The package was installed by debian.
-          sudo apt remove python3-urllib3 python3-typing-extensions
-          sudo pip3 install -r requirements-test.txt
+          sudo pip3 install --break-system-packages -r requirements-test.txt
 
       - name: QA checks
         run: ./run-qa-checks
 
       - name: Use the auto-install script to start containers with edge images
         id: auto_install_edge
-        if: ${{ !cancelled() && steps.deps.conclusion == 'success' }}
         run: |
           printf "edge\n./.env\n" | sudo -E ./deploy/auto-install.sh \
               || (docker compose --file /opt/openwisp/docker-openwisp/docker-compose.yml logs && exit 1)
 
-      - name: Build Images
+      - name: Build images
         id: build_images
         if: ${{ !cancelled() && steps.auto_install_edge.conclusion == 'success' }}
         run: make compose-build nfs-build
 
-      - name: Set GIT_BRANCH
-        id: set_git_branch
+      - name: Set git branch for upgrade test
+        id: set_git_branch_for_upgrade
         if: ${{ !cancelled() && steps.build_images.conclusion == 'success' }}
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
@@ -61,7 +66,7 @@ jobs:
 
       - name: Use auto-install script to upgrade containers to latest version
         id: auto_install_upgrade
-        if: ${{ !cancelled() && steps.set_git_branch.conclusion == 'success' }}
+        if: ${{ !cancelled() && steps.set_git_branch_for_upgrade.conclusion == 'success' }}
         # Do not remove the blank lines from the input.
         run: |
           printf "latest\n" | \
