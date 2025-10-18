@@ -1,18 +1,11 @@
-# Multi-platform build arguments
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-ARG TARGETOS
-ARG TARGETARCH
-
 FROM alpine:3.22
 
 WORKDIR /opt/openwisp/
 # hadolint ignore=DL3018
 RUN apk add --no-cache --upgrade \
-            cyrus-sasl~=2.1.28-r8	\
-            cyrus-sasl-login~=2.1.28-r8 \
-            openssl && \
-    apk add --no-cache \
+            cyrus-sasl	\
+            cyrus-sasl-login \
+            openssl \
             postfix \
             rsyslog \
             tzdata && \

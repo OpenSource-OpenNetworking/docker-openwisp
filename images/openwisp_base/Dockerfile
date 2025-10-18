@@ -1,10 +1,4 @@
-# Multi-platform build arguments
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-ARG TARGETOS
-ARG TARGETARCH
-
-FROM --platform=$BUILDPLATFORM python:3.13-slim-bullseye AS system
+FROM python:3.13-slim-bullseye AS system
 
 # System requirements:
 # 1. gettext: Required by envsubst used in scripts
@@ -24,17 +18,18 @@ RUN apt-get update && \
 
 RUN useradd --system --password '' --create-home --shell /bin/bash \
     --gid root --uid 1001 openwisp
+RUN mkdir /home/openwisp/.ssh && \
+    mkdir -p /tmp && chmod 1777 /tmp
+RUN chown -R openwisp:root /home/openwisp/
 USER openwisp:root
 
 FROM system AS openwisp_python
 
 ENV PATH="${PATH}:/home/openwisp/.local/bin"
-# Use dynamic Python version detection for multi-platform compatibility
-RUN PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')") && \
-    echo "export PYTHONPATH=/home/openwisp/.local/lib/python${PYTHON_VERSION}/site-packages" >> ~/.bashrc
-ENV PYTHONPATH=/home/openwisp/.local/lib/python3.13/site-packages
 
-RUN pip install --no-cache-dir --user --upgrade pip~=24.1.2 setuptools~=70.3.0 wheel~=0.43.0
+
+# hadolint ignore=DL3013
+RUN pip install --no-cache-dir --user --upgrade pip setuptools wheel
 ARG OPENWISP_MONITORING_SOURCE="https://github.com/openwisp/openwisp-monitoring/tarball/1.2"
 # hadolint ignore=DL3013
 RUN pip install --no-cache-dir --user --upgrade ${OPENWISP_MONITORING_SOURCE}
@@ -97,9 +92,8 @@ COPY --chown=openwisp:root ./common/ /opt/openwisp/
 RUN mkdir /opt/openwisp/static && \
     mkdir /opt/openwisp/media && \
     mkdir /opt/openwisp/private && \
-    mkdir /opt/openwisp/logs && \
-    mkdir /home/openwisp/.ssh && \
-    chown -R openwisp:root /opt/openwisp && \
+    mkdir /opt/openwisp/logs
+RUN chown -R openwisp:root /opt/openwisp && \
     chown -R openwisp:root /home/openwisp/.ssh
 # Maintain backward compatibility with code written for ansible-openwisp2
 RUN ln -s /opt/openwisp/openwisp /opt/openwisp/openwisp2
@@ -152,10 +146,8 @@ ENV DASHBOARD_APP_SERVICE=dashboard \
     DASHBOARD_APP_PORT=8000 \
     API_APP_PORT=8001 \
     WEBSOCKET_APP_PORT=8002 \
-    NETWORK_TOPOLOGY_APP_PORT=8003 \
     DASHBOARD_INTERNAL=dashboard.internal \
     API_INTERNAL=api.internal \
-    NETWORK_TOPOLOGY_INTERNAL=network-topology.internal \
     # SSH Credentials Configurations
     SSH_PRIVATE_KEY_PATH=/home/openwisp/.ssh/id_ed25519 \
     SSH_PUBLIC_KEY_PATH=/home/openwisp/.ssh/id_ed25519.pub \

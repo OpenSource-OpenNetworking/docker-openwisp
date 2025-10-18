@@ -1,26 +1,13 @@
-# Multi-platform build arguments
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-ARG TARGETOS
-ARG TARGETARCH
+FROM freeradius/freeradius-server:3.2.8-alpine
 
-# Use Alpine Linux base for multi-platform support instead of freeradius image
-FROM alpine:3.19
-
-# Install FreeRADIUS and dependencies from Alpine repositories (supports multi-platform)
 # hadolint ignore=DL3018
 RUN apk add --no-cache --update \
-    freeradius \
-    freeradius-postgresql \
-    freeradius-rest \
-    freeradius-sql \
-    tzdata \
-    postgresql-client \
-    && rm -rf /var/cache/apk/* /tmp/*
+            tzdata \
+            postgresql17-client && \
+    rm -rf /var/cache/apk/* /tmp/*
 
-# Create FreeRADIUS user and group (Alpine creates these by default, but let's be explicit)
-RUN addgroup -S freerad 2>/dev/null || true && \
-    adduser -S freerad -G freerad 2>/dev/null || true
+RUN addgroup -S freerad && \
+    adduser -S freerad -G freerad
 
 CMD ["sh", "init_command.sh"]
 EXPOSE 1812/udp 1813/udp
@@ -28,11 +15,10 @@ EXPOSE 1812/udp 1813/udp
 # hadolint ignore=DL3045
 COPY ./common/init_command.sh \
     ./common/utils.sh ./
-COPY ./openwisp_freeradius/docker-entrypoint.sh ./
 COPY ./openwisp_freeradius/raddb/ /etc/raddb/
-RUN chown -R freerad:root /etc/raddb/ && \
-    mkdir -p /var/log/radius && \
-    chown -R freerad:root /var/log/radius
+RUN chown -R freerad:root /opt/etc/raddb/ && \
+    chmod -R go-w /opt/etc/raddb/ && \
+    chown -R freerad:root /opt/var/log/
 
 ENV TZ=UTC \
     MODULE_NAME=freeradius \
